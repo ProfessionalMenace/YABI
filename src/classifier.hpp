@@ -54,8 +54,13 @@ std::vector<Token> tokenize(const std::string &str) {
         }
     };
 
+    auto last_symbol = Symbol::bad;
     for(auto ch : str) {
         auto symbol = classify(ch);
+        if(symbol == last_symbol && symbol != Symbol::numeric) {
+            tokens.back().data += 1;
+            continue;
+        }
         switch (symbol) {
             case Symbol::bad:
                 std::cerr << "Bad symbol ignored\n";
@@ -70,9 +75,10 @@ std::vector<Token> tokenize(const std::string &str) {
                     return tokens;
                 }
                 value = labels.top();
-                tokens[value].data = tokens.size();
-                tokens.emplace_back(symbol, value);
+                tokens[value].data = tokens.size(); // loop begin
+                tokens.emplace_back(symbol, value); // loop end
                 labels.pop();
+                value = 0;
                 break;
             case Symbol::loop_begin:
                 handle_unused("loop_begin");
@@ -84,6 +90,7 @@ std::vector<Token> tokenize(const std::string &str) {
                 value = 0;
                 break;
         }
+        last_symbol = symbol;
     }
     if (labels.size()) {
         std::cerr << "Unclosed left bracket\n";

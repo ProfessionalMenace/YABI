@@ -5,8 +5,11 @@
 #include <print>
 
 int main() {
-    std::string input;
-    std::getline(std::cin, input);
+    std::string input(R"(
+            ++++++++
+            [>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]
+            >>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+            )");
     remove_invalid_characters(input);
     if(!check_parenthesation(input)) {
         std::cerr << "Err: Invalid parenthesis\n";
@@ -14,5 +17,6 @@ int main() {
     }
     auto tokens = tokenize(input);
     print_tokens(tokens);
-    interpret(tokens);
+    Interpreter foo;
+    foo.interpret(tokens);
 }
