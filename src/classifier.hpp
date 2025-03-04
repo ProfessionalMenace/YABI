@@ -46,6 +46,12 @@ std::vector<Token> tokenize(const std::string &str) {
     std::vector<Token> tokens;
     std::stack<size_t> labels;
     size_t value = 0;
+    bool stop_flag = false;
+
+    auto stop_tokenizer = [&stop_flag](auto message) {
+        std::cerr << "Stopping tokenizer... " <<  message << '\n';
+        stop_flag = true;
+    };
 
     auto handle_unused = [&value](auto message){ 
         if (value) {
@@ -55,15 +61,11 @@ std::vector<Token> tokenize(const std::string &str) {
     };
 
     auto last_symbol = Symbol::bad;
-    for(auto ch : str) {
+    for(auto it = str.cbegin(); it != str.cend() && !stop_flag; ++it) {
+        auto ch = *it;
         auto symbol = classify(ch);
-        if(symbol == last_symbol && symbol != Symbol::numeric) {
-            tokens.back().data += 1;
-            continue;
-        }
         switch (symbol) {
-            case Symbol::bad:
-                std::cerr << "Bad symbol ignored\n";
+            case Symbol::bad: /* ignore bad symbols */
                 break;
             case Symbol::numeric:
                 value = value*10 + (ch - '0');
@@ -71,8 +73,8 @@ std::vector<Token> tokenize(const std::string &str) {
             case Symbol::loop_end:
                 handle_unused("loop_end");
                 if(!labels.size()) {
-                    std::cerr << "Unclosed right bracket\n";
-                    return tokens;
+                    stop_tokenizer("Unclosed right bracket");
+                    break;
                 }
                 value = labels.top();
                 tokens[value].data = tokens.size(); // loop begin
@@ -83,8 +85,11 @@ std::vector<Token> tokenize(const std::string &str) {
             case Symbol::loop_begin:
                 handle_unused("loop_begin");
                 labels.push(tokens.size());
-                [[fallthrough]];
+                tokens.emplace_back(symbol, value);
+                value = 0;
+                break;
             default: 
+                if(symbol == last_symbol) { tokens.back().data += 1; break; }
                 if(value == 0) { value = 1; }
                 tokens.emplace_back(symbol, value);
                 value = 0;
@@ -92,37 +97,19 @@ std::vector<Token> tokenize(const std::string &str) {
         }
         last_symbol = symbol;
     }
+
     if (labels.size()) {
-        std::cerr << "Unclosed left bracket\n";
+        stop_tokenizer("Unclosed left bracket");
     }
-    return tokens;
+    
+    if(!stop_flag) { return tokens; } else { return {}; }
 }
 
 void print_tokens(const std::vector<Token> &tokens) {
-    char chars[] = "  <>+-,.[]";
+    char chars[] = "  <>+-.,[]";
     for(size_t i = 0; i < tokens.size(); ++i) {
         auto tok = tokens[i];
         std::println("Token[{}]: ({}, {})", i, chars[static_cast<size_t>(tok.type)], tok.data);
     }
 }
 
-[[maybe_unused]]
-auto remove_invalid_characters(std::string &str) noexcept {
-    std::erase_if(str, [](char &ch){ return classify(ch) == Symbol::bad; });
-    return str.size();
-}
-
-[[maybe_unused, nodiscard]]
-bool check_parenthesation(const std::string &str) noexcept {
-    size_t left = 0;
-    for(char ch : str) {
-        auto value = classify(ch);
-        if(value == Symbol::loop_begin) {
-            ++left;
-        } else if(value == Symbol::loop_end) {
-            if(left == 0) { return false; }
-            --left;
-        }
-    }
-    return (left == 0);
-}

@@ -10,11 +10,6 @@ int main() {
             [>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]
             >>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
             )");
-    remove_invalid_characters(input);
-    if(!check_parenthesation(input)) {
-        std::cerr << "Err: Invalid parenthesis\n";
-        return EXIT_FAILURE;
-    }
     auto tokens = tokenize(input);
     print_tokens(tokens);
     Interpreter foo;
