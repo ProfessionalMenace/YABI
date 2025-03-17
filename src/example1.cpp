@@ -1,8 +1,6 @@
 #include "interpreter.hpp"
 #include <cassert>
 #include <cstdlib>
-#include <iostream>
-#include <print>
 
 int main() {
     std::string input(R"(
@@ -10,8 +8,8 @@ int main() {
             [>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]
             >>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
             )");
-    auto tokens = tokenize(input);
-    print_tokens(tokens);
+    auto tokens = Tokenizer::tokenize(input);
+    Tokenizer::print_tokens(tokens);
     Interpreter foo;
     foo.interpret(tokens);
 }

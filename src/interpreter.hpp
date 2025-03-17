@@ -86,7 +86,7 @@ struct Interpreter {
     }
 
     /* Jump to a position inside of a token buffer */
-    void jump (std::vector<Token> &tokens) {
+    void jump (std::vector<Tokenizer::Token> &tokens) {
         if(token_idx < tokens.size()) {
             token_idx = tokens[token_idx].data;
         } else {
@@ -99,30 +99,30 @@ struct Interpreter {
         std::cerr << "Undexpected symbol\n";
     }
 
-    void interpret(std::vector<Token> &tokens) {
+    void interpret(std::vector<Tokenizer::Token> &tokens) {
         token_idx = 0;
         stop_flag = false;
         while(token_idx < tokens.size() && !stop_flag) {
             auto [type, value] = tokens[token_idx];
             switch(type) {
-                case Symbol::inc : increment(value);  break;
-                case Symbol::dec : decrement(value);  break;
-                case Symbol::movr: move_right(value); break;
-                case Symbol::movl: move_left(value);  break;
-                case Symbol::out : output(value);     break;
-                case Symbol::in  : input(value);      break;
-                case Symbol::loop_begin: 
+                case Tokenizer::Symbol::inc : increment(value);  break;
+                case Tokenizer::Symbol::dec : decrement(value);  break;
+                case Tokenizer::Symbol::movr: move_right(value); break;
+                case Tokenizer::Symbol::movl: move_left(value);  break;
+                case Tokenizer::Symbol::out : output(value);     break;
+                case Tokenizer::Symbol::in  : input(value);      break;
+                case Tokenizer::Symbol::loop_begin: 
                     if(memory_[memory_idx] == 0) {
                         jump(tokens);
                     }
                     break;
-                case Symbol::loop_end: 
+                case Tokenizer::Symbol::loop_end: 
                     if(memory_[memory_idx] != 0) {
                         jump(tokens);
                     }
                     break;
-                case Symbol::bad: [[fallthrough]];
-                case Symbol::numeric: handle_unexpected();
+                case Tokenizer::Symbol::bad: [[fallthrough]];
+                case Tokenizer::Symbol::numeric: handle_unexpected();
             }
             ++token_idx;
         }
