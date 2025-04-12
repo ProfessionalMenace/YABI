@@ -85,7 +85,7 @@ struct Interpreter {
 
     void handle_unexpected() { std::cerr << "Undexpected symbol\n"; }
 
-    void interpret(std::vector<Tokenizer::Token> &tokens) {
+    void interpret(std::vector<Token> &tokens) {
         size_t token_idx = 0;
 
         /* Jump to a position inside of a token buffer */
@@ -101,24 +101,24 @@ struct Interpreter {
         while (token_idx < tokens.size() && !stop_flag) {
             auto [type, value] = tokens[token_idx];
             switch (type) {
-            case Tokenizer::Symbol::inc: increment(value); break;
-            case Tokenizer::Symbol::dec: decrement(value); break;
-            case Tokenizer::Symbol::movr: move_right(value); break;
-            case Tokenizer::Symbol::movl: move_left(value); break;
-            case Tokenizer::Symbol::out: output(value); break;
-            case Tokenizer::Symbol::in: input(value); break;
-            case Tokenizer::Symbol::loop_begin:
+            case Symbol::inc: increment(value); break;
+            case Symbol::dec: decrement(value); break;
+            case Symbol::movr: move_right(value); break;
+            case Symbol::movl: move_left(value); break;
+            case Symbol::out: output(value); break;
+            case Symbol::in: input(value); break;
+            case Symbol::loop_begin:
                 if (memory_[memory_idx] == 0) {
                     jump(value);
                 }
                 break;
-            case Tokenizer::Symbol::loop_end:
+            case Symbol::loop_end:
                 if (memory_[memory_idx] != 0) {
                     jump(value);
                 }
                 break;
-            case Tokenizer::Symbol::bad: [[fallthrough]];
-            case Tokenizer::Symbol::numeric: handle_unexpected();
+            case Symbol::bad: [[fallthrough]];
+            case Symbol::numeric: handle_unexpected();
             }
             ++token_idx;
         }
