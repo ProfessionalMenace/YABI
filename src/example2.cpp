@@ -5,8 +5,8 @@ import interpreter;
 
 int main() {
     std::string input;
-    std::getline(std::cin, input);
+    std::getline(std::cin, input, '\0');
     auto tokens = tokenize(input);
-    Interpreter foo;
+    Interpreter foo(100000);
     foo.interpret(tokens);
 }

@@ -7,13 +7,12 @@ import classifier;
 export module interpreter;
 
 export class Interpreter {
-    std::vector<uint8_t> interpreter_state;
+    size_t memory_size;
     size_t state_idx;
+    uint8_t *memory_state;
     bool stop_flag;
-    bool cycle;
-
-    void print_state(void);
-    void print_ascii(void);
+    bool cycle_value;
+    bool cycle_memory;
 
     void increment(uint8_t value);
     void decrement(uint8_t value);
@@ -27,20 +26,28 @@ export class Interpreter {
     void handle_unexpected();
 
   public:
-    Interpreter();
+    Interpreter(size_t size, size_t offset, bool cycle_value, bool cycle_memory);
+    ~Interpreter();
+
     void interpret(const std::vector<Token> &tokens);
+    void print_state(void);
 };
 
-Interpreter::Interpreter() : interpreter_state(1, 0), state_idx(0), stop_flag(false), cycle(true) {}
+Interpreter::Interpreter(size_t size, size_t offset = 0, bool cycle_value = true, bool cycle_memory = true)
+    : memory_size(size), memory_state(nullptr), state_idx(offset), stop_flag(false), cycle_value(cycle_value),
+      cycle_memory(cycle_memory) {
+    // add check here
+    memory_state = new uint8_t[size]{};
+}
 
-/* outputs state in a hex codes */
-void Interpreter::print_state(void) { std::println(std::cerr, "Don't print state!!!"); }
+Interpreter::~Interpreter() { delete[] memory_state; }
 
 /* outputs state in a ascii */
-void Interpreter::print_ascii(void) {
-    for (char ch : interpreter_state) {
+void Interpreter::print_state(void) {
+    for (size_t i = 0; i < memory_size; ++i) {
+        char ch = memory_state[i];
         if (std::isprint(ch)) {
-            std::print("[{}]", ch);
+            std::print("[{:2}]", ch);
         } else {
             std::print("[{:2x}]", ch);
         }
@@ -50,64 +57,64 @@ void Interpreter::print_ascii(void) {
 
 /* Increment the byte at the data pointer by value */
 void Interpreter::increment(uint8_t value) {
-    size_t tmp = interpreter_state[state_idx] + value;
-    if (!cycle && tmp >= 0xFF) {
-        std::println(std::cerr, "Memory overflow at {}", state_idx);
-        print_ascii();
+    size_t tmp = memory_state[state_idx] + value;
+    if (!cycle_value && tmp >= 0xFF) {
+        std::println(std::cerr, "Value overflow at {}", state_idx);
+        print_state();
         stop_flag = true;
         return;
     }
-    interpreter_state[state_idx] = tmp;
+    memory_state[state_idx] = tmp;
 }
 
 /* Decrement the byte at the data pointer by value. */
 void Interpreter::decrement(uint8_t value) {
-    size_t tmp = interpreter_state[state_idx];
-    if (!cycle && tmp < value) {
-        std::println(std::cerr, "Memory underflow at {}", state_idx);
-        print_ascii();
+    if (!cycle_value && memory_state[state_idx] < value) {
+        std::println(std::cerr, "Value underflow at {}", state_idx);
+        print_state();
         stop_flag = true;
         return;
     }
-    interpreter_state[state_idx] = (tmp - value);
+    memory_state[state_idx] = memory_state[state_idx] - value;
 }
 
 /* Increment the data pointer by value. */
 void Interpreter::move_right(uint8_t value) {
-    state_idx += value;
-    while (state_idx >= interpreter_state.size()) {
-        interpreter_state.push_back(0);
+    size_t tmp = state_idx + value;
+    if (!cycle_memory && tmp > memory_size) {
+        std::println(std::cerr, "Memory pointer overflow");
+        print_state();
+        stop_flag = true;
+        return;
     }
+    state_idx = tmp % memory_size;
 }
 
 /* Decrement the data pointer by one */
 void Interpreter::move_left(uint8_t value) {
-    if (value > state_idx) {
+    size_t tmp = memory_size + state_idx - value;
+    if (!cycle_memory && tmp < memory_size) {
+        std::println(std::cerr, "Memory pointer underflow");
+        print_state();
         stop_flag = true;
-        std::cerr << "Memory pointer underflow\n";
-        print_ascii();
         return;
-    };
-    state_idx -= value;
+    }
+    state_idx = tmp % memory_size;
 }
 
 /* Output the byte at the data pointer. */
 void Interpreter::output(uint8_t value) {
-    while (value--) {
-        std::print("{}", static_cast<char>(interpreter_state[state_idx]));
-    }
+    while (value--)
+        std::cout << static_cast<char>(memory_state[state_idx]);
 }
 
 /* Accept one byte of input, storing its value in the byte at the data pointer. */
-void Interpreter::input(uint8_t value) {
-    while (value--) {
-        interpreter_state[state_idx] = std::cin.get();
-    }
-}
+void Interpreter::input(uint8_t value) { memory_state[state_idx] = std::cin.get(); }
 
 void Interpreter::handle_unexpected() {
     std::println(std::cerr, "Undexpected symbol at {}", state_idx);
-    print_ascii();
+    print_state();
+    stop_flag = true;
 }
 
 void Interpreter::interpret(const std::vector<Token> &tokens) {
@@ -133,12 +140,12 @@ void Interpreter::interpret(const std::vector<Token> &tokens) {
         case Symbol::out: output(value); break;
         case Symbol::in: input(value); break;
         case Symbol::loop_begin:
-            if (interpreter_state[state_idx] == 0) {
+            if (memory_state[state_idx] == 0) {
                 jump(value);
             }
             break;
         case Symbol::loop_end:
-            if (interpreter_state[state_idx] != 0) {
+            if (memory_state[state_idx] != 0) {
                 jump(value);
             }
             break;

@@ -43,6 +43,9 @@ const std::string hello_world = R"(
 
 int main() {
     auto tokens = tokenize(hello_world);
-    Interpreter foo;
+    Interpreter foo(50);
+
+    std::print("{}", hello_world);
     foo.interpret(tokens);
+    foo.print_state();
 }
